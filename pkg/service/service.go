@@ -1,8 +1,12 @@
 package service
 
-import "TalkBoard/pkg/repository"
+import (
+	"TalkBoard/models"
+	"TalkBoard/pkg/repository"
+)
 
 type Authorization interface {
+	CreateUser(user models.User) (int, error)
 }
 
 type Post interface{}
@@ -17,5 +21,7 @@ type Service struct {
 }
 
 func NewService(repos *repository.Repository) *Service {
-	return &Service{}
+	return &Service{
+		Authorization: NewAuthService(repos.Authorization),
+	}
 }
