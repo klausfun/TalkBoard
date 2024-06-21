@@ -11,7 +11,9 @@ type Authorization interface {
 	ParseToken(token string) (int, error)
 }
 
-type Post interface{}
+type Post interface {
+	Create(userId int, post models.Post) (int, error)
+}
 
 type Subscription interface {
 }
@@ -25,5 +27,6 @@ type Service struct {
 func NewService(repos *repository.Repository) *Service {
 	return &Service{
 		Authorization: NewAuthService(repos.Authorization),
+		Post:          NewPostService(repos.Post),
 	}
 }

@@ -1,14 +1,15 @@
 package main
 
 import (
-	"TalkBoard"
 	"TalkBoard/pkg/handler"
 	"TalkBoard/pkg/repository"
 	"TalkBoard/pkg/service"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"net/http"
 	"os"
 )
 
@@ -39,8 +40,12 @@ func main() {
 	services := service.NewService(repos)
 	handlers := handler.NewHandler(services)
 
-	srv := new(TalkBoard.Server)
-	if err := srv.Run(viper.GetString("port"), handlers.InitRoutes()); err != nil {
+	http.Handle("/graphql", handlers.InitGraphQL())
+	http.Handle("/playground", playground.Handler("GraphQL", "/graphql"))
+
+	port := viper.GetString("port")
+	logrus.Infof("connect to http://localhost:%s/playground for GraphQL playground", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		logrus.Fatalf("error occured while running http server: %s", err.Error())
 	}
 }

@@ -3,10 +3,9 @@ package models
 type Post struct {
 	Id               int    `json:"id"`
 	UserId           int    `json:"user_id"`
-	Title            string `json:"title"`
-	Description      string `json:"description"`
-	Content          string `json:"content"`
-	AccessToComments bool   `json:"access_to_comments"`
+	Title            string `json:"title" binding:"required"`
+	Content          string `json:"content" binding:"required"`
+	AccessToComments bool   `json:"access_to_comments" binding:"required"`
 }
 
 type Subscription struct {

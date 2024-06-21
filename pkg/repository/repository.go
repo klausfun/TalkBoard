@@ -10,7 +10,9 @@ type Authorization interface {
 	GetUser(email, password string) (models.User, error)
 }
 
-type Post interface{}
+type Post interface {
+	Create(userId int, post models.Post) (int, error)
+}
 
 type Subscription interface {
 }
@@ -24,5 +26,6 @@ type Repository struct {
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
+		Post:          NewPostPostgres(db),
 	}
 }

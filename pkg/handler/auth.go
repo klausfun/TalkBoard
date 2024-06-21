@@ -2,45 +2,37 @@ package handler
 
 import (
 	"TalkBoard/models"
-	"github.com/gin-gonic/gin"
-	"net/http"
+	"github.com/graphql-go/graphql"
 )
 
-func (h *Handler) signUp(c *gin.Context) {
-	var input models.User
-
-	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid input body")
-		return
+func (h *Handler) signUp(p graphql.ResolveParams) (interface{}, error) {
+	input := p.Args["input"].(map[string]interface{})
+	user := models.User{
+		Name:     input["name"].(string),
+		Email:    input["email"].(string),
+		Password: input["password"].(string),
 	}
 
-	id, err := h.services.Authorization.CreateUser(input)
+	id, err := h.services.Authorization.CreateUser(user)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
+		return nil, err
 	}
 
-	c.JSON(http.StatusOK, map[string]interface{}{"id": id})
+	user.Id = id
+	return user, nil
 }
 
-type signInInput struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
+func (h *Handler) signIn(p graphql.ResolveParams) (interface{}, error) {
+	input := p.Args["input"].(map[string]interface{})
+	email := input["email"].(string)
+	password := input["password"].(string)
 
-func (h *Handler) signIn(c *gin.Context) {
-	var input signInInput
-
-	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid input body")
-		return
-	}
-
-	token, err := h.services.Authorization.GenerateToken(input.Email, input.Password)
+	token, err := h.services.Authorization.GenerateToken(email, password)
 	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
+		return nil, err
 	}
 
-	c.JSON(http.StatusOK, map[string]interface{}{"token": token})
+	return map[string]interface{}{
+		"token": token,
+	}, nil
 }
