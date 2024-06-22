@@ -1,59 +1,65 @@
 package handler
 
 import (
+	"TalkBoard/pkg/service"
+	"context"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
 )
 
 const (
 	authorizationHeader = "Authorization"
-	userCtx             = "userId"
+	userCtxKey          = "userId"
 )
 
-func (h *Handler) userIdentity(c *gin.Context) {
-	header := c.GetHeader(authorizationHeader)
-	if header == "" {
-		newErrorResponse(c, http.StatusUnauthorized, "empty auth header")
-		return
-	}
-
-	headerParts := strings.Split(header, " ")
-	if len(headerParts) != 2 {
-		newErrorResponse(c, http.StatusUnauthorized, "invalid auth header")
-		return
-	}
-
-	if headerParts[0] != "Bearer" {
-		newErrorResponse(c, http.StatusUnauthorized, "invalid auth header")
-		return
-	}
-
-	if headerParts[1] == "" {
-		newErrorResponse(c, http.StatusUnauthorized, "token is empty")
-		return
-	}
-
-	userId, err := h.services.Authorization.ParseToken(headerParts[1])
-	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	c.Set(userCtx, userId)
+type Middleware struct {
+	services *service.Service
 }
 
-func getUserId(c *gin.Context) (int, error) {
-	id, ok := c.Get(userCtx)
+func NewMiddleware(services *service.Service) *Middleware {
+	return &Middleware{services: services}
+}
+
+func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		header := r.Header.Get(authorizationHeader)
+		if header == "" {
+			http.Error(w, "empty auth header", http.StatusUnauthorized)
+			return
+		}
+
+		headerParts := strings.Split(header, " ")
+		if len(headerParts) != 2 {
+			http.Error(w, "invalid auth header", http.StatusUnauthorized)
+			return
+		}
+
+		if headerParts[0] != "Bearer" {
+			http.Error(w, "invalid auth header", http.StatusUnauthorized)
+			return
+		}
+
+		if headerParts[1] == "" {
+			http.Error(w, "token is empty", http.StatusUnauthorized)
+			return
+		}
+
+		userId, err := m.services.Authorization.ParseToken(headerParts[1])
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), userCtxKey, userId)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func getUserId(ctx context.Context) (int, error) {
+	userId, ok := ctx.Value(userCtxKey).(int)
 	if !ok {
 		return 0, errors.New("user id not found")
 	}
-
-	idInt, ok := id.(int)
-	if !ok {
-		return 0, errors.New("user id not found")
-	}
-
-	return idInt, nil
+	return userId, nil
 }

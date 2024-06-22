@@ -39,7 +39,9 @@ func main() {
 	repos := repository.NewRepository(db)
 	services := service.NewService(repos)
 	handlers := handler.NewHandler(services)
+	//middlewares := handler.NewMiddleware(services)
 
+	//http.Handle("/graphql", middlewares.AuthMiddleware(handlers.InitGraphQL()))
 	http.Handle("/graphql", handlers.InitGraphQL())
 	http.Handle("/playground", playground.Handler("GraphQL", "/graphql"))
 

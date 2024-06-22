@@ -28,13 +28,10 @@ func (h *Handler) createSchema() graphql.Schema {
 	rootQuery := graphql.NewObject(graphql.ObjectConfig{
 		Name: "RootQuery",
 		Fields: graphql.Fields{
-			// Простой пустой запрос, чтобы избежать ошибки
-			"dummyQuery": &graphql.Field{
-				Type:        graphql.String,
-				Description: "A dummy query",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return "Hello, World!", nil
-				},
+			"getAllPosts": &graphql.Field{
+				Type:        graphql.NewList(schema_graphql.PostType),
+				Description: "Get all posts",
+				Resolve:     h.getAllPosts,
 			},
 		},
 	})
@@ -47,36 +44,30 @@ func (h *Handler) createSchema() graphql.Schema {
 				Description: "Create a new post",
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(schema_graphql.CreatePostInput),
+						Type: graphql.NewNonNull(schema_graphql.Post),
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return h.createPost(p)
-				},
+				Resolve: h.createPost,
 			},
 			"signUp": &graphql.Field{
-				Type:        schema_graphql.UserType, // Возвращаемый тип данных (пользователь)
+				Type:        schema_graphql.UserType,
 				Description: "Sign up a new user",
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
 						Type: graphql.NewNonNull(schema_graphql.SignUpInput),
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return h.signUp(p)
-				},
+				Resolve: h.signUp,
 			},
 			"signIn": &graphql.Field{
-				Type:        schema_graphql.SignInResponse, // Возвращаемый тип данных (токен)
+				Type:        schema_graphql.SignInResponse,
 				Description: "Sign in an existing user",
 				Args: graphql.FieldConfigArgument{
 					"input": &graphql.ArgumentConfig{
 						Type: graphql.NewNonNull(schema_graphql.SignInInput),
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return h.signIn(p)
-				},
+				Resolve: h.signIn,
 			},
 		},
 	})

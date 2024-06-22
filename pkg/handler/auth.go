@@ -29,7 +29,7 @@ func (h *Handler) signIn(p graphql.ResolveParams) (interface{}, error) {
 
 	token, err := h.services.Authorization.GenerateToken(email, password)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	return map[string]interface{}{

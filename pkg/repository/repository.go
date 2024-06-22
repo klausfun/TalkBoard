@@ -12,6 +12,7 @@ type Authorization interface {
 
 type Post interface {
 	Create(userId int, post models.Post) (int, error)
+	GetAll() ([]models.Post, error)
 }
 
 type Subscription interface {

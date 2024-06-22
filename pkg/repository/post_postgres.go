@@ -25,3 +25,11 @@ func (r *PostPostgres) Create(userId int, post models.Post) (int, error) {
 
 	return id, nil
 }
+
+func (r *PostPostgres) GetAll() ([]models.Post, error) {
+	var posts []models.Post
+	query := fmt.Sprintf("SELECT * FROM %s", postsTable)
+	err := r.db.Select(&posts, query)
+
+	return posts, err
+}

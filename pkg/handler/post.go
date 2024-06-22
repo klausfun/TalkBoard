@@ -27,6 +27,13 @@ func (h *Handler) createPost(p graphql.ResolveParams) (interface{}, error) {
 	return post, nil
 }
 
-//func (h *Handler) getAllPosts(c *gin.Context) {}
-//
+func (h *Handler) getAllPosts(p graphql.ResolveParams) (interface{}, error) {
+	posts, err := h.services.Post.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}
+
 //func (h *Handler) getPostById(c *gin.Context) {}
