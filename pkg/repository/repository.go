@@ -15,18 +15,20 @@ type Post interface {
 	GetAll() ([]models.Post, error)
 }
 
-type Subscription interface {
+type Comment interface {
+	Create(comment models.Comment) (int, error)
 }
 
 type Repository struct {
 	Authorization
 	Post
-	Subscription
+	Comment
 }
 
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
 		Post:          NewPostPostgres(db),
+		Comment:       NewCommentPostgres(db),
 	}
 }

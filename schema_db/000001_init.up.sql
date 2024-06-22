@@ -15,10 +15,11 @@ CREATE TABLE posts
     access_to_comments bool                                        not null
 );
 
-CREATE TABLE subscriptions
+CREATE TABLE comments
 (
     id                serial                                      not null unique,
-    parent_comment_id int references subscriptions (id) on delete cascade,
+    parent_comment_id int references comments (id) on delete cascade,
     post_id           int references posts (id) on delete cascade not null,
+    user_id           int references users (id) on delete cascade not null,
     content           varchar(2000)                               not null
 );

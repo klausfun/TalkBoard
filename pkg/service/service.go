@@ -16,18 +16,21 @@ type Post interface {
 	GetAll() ([]models.Post, error)
 }
 
-type Subscription interface {
+type Comment interface {
+	//Create(userId int, comment models.Comment) (int, error)
+	Create(comment models.Comment) (int, error)
 }
 
 type Service struct {
 	Authorization
 	Post
-	Subscription
+	Comment
 }
 
 func NewService(repos *repository.Repository) *Service {
 	return &Service{
 		Authorization: NewAuthService(repos.Authorization),
 		Post:          NewPostService(repos.Post),
+		Comment:       NewCommentService(repos.Comment),
 	}
 }

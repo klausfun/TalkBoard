@@ -1,4 +1,4 @@
-DROP TABLE subscriptions;
+DROP TABLE comments;
 
 DROP TABLE posts;
 

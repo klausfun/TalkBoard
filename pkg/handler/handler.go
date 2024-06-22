@@ -39,6 +39,16 @@ func (h *Handler) createSchema() graphql.Schema {
 	rootMutation := graphql.NewObject(graphql.ObjectConfig{
 		Name: "RootMutation",
 		Fields: graphql.Fields{
+			"createComment": &graphql.Field{
+				Type:        schema_graphql.CommentType,
+				Description: "Create a new comment",
+				Args: graphql.FieldConfigArgument{
+					"input": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(schema_graphql.Comment),
+					},
+				},
+				Resolve: h.createComment,
+			},
 			"createPost": &graphql.Field{
 				Type:        schema_graphql.PostType,
 				Description: "Create a new post",
