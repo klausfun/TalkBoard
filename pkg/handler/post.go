@@ -36,4 +36,26 @@ func (h *Handler) getAllPosts(p graphql.ResolveParams) (interface{}, error) {
 	return posts, nil
 }
 
-//func (h *Handler) getPostById(c *gin.Context) {}
+func (h *Handler) getPostById(p graphql.ResolveParams) (interface{}, error) {
+	postId := p.Args["id"].(int)
+
+	post, err := h.services.Post.GetByPostId(postId)
+	if err != nil {
+		return nil, err
+	}
+
+	comments, err := h.services.Comment.GetByPostId(postId)
+	if err != nil {
+		return nil, err
+	}
+
+	postWithComments := struct {
+		Post     models.Post      `json:"post"`
+		Comments []models.Comment `json:"comments"`
+	}{
+		Post:     post,
+		Comments: comments,
+	}
+
+	return postWithComments, nil
+}

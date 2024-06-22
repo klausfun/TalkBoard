@@ -33,3 +33,11 @@ func (r *PostPostgres) GetAll() ([]models.Post, error) {
 
 	return posts, err
 }
+
+func (r *PostPostgres) GetByPostId(postId int) (models.Post, error) {
+	var post models.Post
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id = $1", postsTable)
+	err := r.db.Get(&post, query, postId)
+
+	return post, err
+}

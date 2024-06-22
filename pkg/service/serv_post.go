@@ -20,3 +20,9 @@ func (s *PostService) Create(userId int, post models.Post) (int, error) {
 func (s *PostService) GetAll() ([]models.Post, error) {
 	return s.repo.GetAll()
 }
+
+func (s *PostService) GetByPostId(postId int) (models.Post, error) {
+	post, err := s.repo.GetByPostId(postId)
+
+	return post, err
+}

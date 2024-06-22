@@ -17,7 +17,9 @@ func NewHandler(services *service.Service) *Handler {
 }
 
 func (h *Handler) InitGraphQL() http.Handler {
+	schema_graphql.Initialize()
 	schema := h.createSchema()
+
 	return handler.New(&handler.Config{
 		Schema: &schema,
 		Pretty: true,
@@ -32,6 +34,16 @@ func (h *Handler) createSchema() graphql.Schema {
 				Type:        graphql.NewList(schema_graphql.PostType),
 				Description: "Get all posts",
 				Resolve:     h.getAllPosts,
+			},
+			"getPostById": &graphql.Field{
+				Type:        schema_graphql.PostWithCommentsType,
+				Description: "Get a post by ID with comments",
+				Args: graphql.FieldConfigArgument{
+					"id": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.Int),
+					},
+				},
+				Resolve: h.getPostById,
 			},
 		},
 	})

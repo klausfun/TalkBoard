@@ -58,3 +58,41 @@ func (r *CommentPostgres) Create(comment models.Comment) (int, error) {
 
 	return id, nil
 }
+
+func (r *CommentPostgres) GetByPostId(postId int) ([]models.Comment, error) {
+	var comments []models.Comment
+	query := fmt.Sprintf("SELECT id, post_id, user_id, content FROM %s WHERE post_id = $1 AND parent_comment_id IS NULL", commentsTable)
+	err := r.db.Select(&comments, query, postId)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range comments {
+		replies, err := r.getRepliesForComment(comments[i].Id)
+		if err != nil {
+			return nil, err
+		}
+		comments[i].Replies = replies
+	}
+
+	return comments, nil
+}
+
+func (r *CommentPostgres) getRepliesForComment(parentCommentID int) ([]models.Comment, error) {
+	var replies []models.Comment
+	query := fmt.Sprintf("SELECT * FROM %s WHERE parent_comment_id = $1", commentsTable)
+	err := r.db.Select(&replies, query, parentCommentID)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range replies {
+		subReplies, err := r.getRepliesForComment(replies[i].Id)
+		if err != nil {
+			return nil, err
+		}
+		replies[i].Replies = subReplies
+	}
+
+	return replies, nil
+}

@@ -13,10 +13,12 @@ type Authorization interface {
 type Post interface {
 	Create(userId int, post models.Post) (int, error)
 	GetAll() ([]models.Post, error)
+	GetByPostId(postId int) (models.Post, error)
 }
 
 type Comment interface {
 	Create(comment models.Comment) (int, error)
+	GetByPostId(postId int) ([]models.Comment, error)
 }
 
 type Repository struct {
