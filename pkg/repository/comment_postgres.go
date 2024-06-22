@@ -16,9 +16,19 @@ func NewCommentPostgres(db *sqlx.DB) *CommentPostgres {
 }
 
 func (r *CommentPostgres) Create(comment models.Comment) (int, error) {
+	var access_to_comments bool
+	queryCheckAccessToComments := fmt.Sprintf("SELECT access_to_comments FROM %s WHERE id = $1", postsTable)
+	err := r.db.Get(&access_to_comments, queryCheckAccessToComments, comment.PostId)
+	if err != nil {
+		return 0, errors.New("there is no post with this id!")
+	}
+	if !access_to_comments {
+		return 0, errors.New("no comments are available under this post!")
+	}
+
 	var id int
 	query := fmt.Sprintf("SELECT id FROM %s WHERE id = $1", commentsTable)
-	err := r.db.Get(&id, query, comment.ParentCommentId)
+	err = r.db.Get(&id, query, comment.ParentCommentId)
 	if err != nil {
 		var commentId int
 		createCommentQuery := fmt.Sprintf("INSERT INTO %s (post_id, user_id, content)"+
