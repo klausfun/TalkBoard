@@ -41,7 +41,7 @@ func (r *CommentPostgres) Create(comment models.Comment) (int, error) {
 		return commentId, nil
 	}
 
-	queryCheck := fmt.Sprintf("SELECT id FROM %s com "+
+	queryCheck := fmt.Sprintf("SELECT com.id FROM %s com "+
 		" INNER JOIN %s post on com.post_id = post.id "+
 		" WHERE com.id = $1 AND post.id = $2", commentsTable, postsTable)
 	err = r.db.Get(&id, queryCheck, comment.ParentCommentId, comment.PostId)
