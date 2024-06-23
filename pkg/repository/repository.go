@@ -18,7 +18,7 @@ type Post interface {
 
 type Comment interface {
 	Create(comment models.Comment) (int, error)
-	GetByPostId(postId int) ([]models.Comment, error)
+	GetByPostId(postId, limit, offset int) ([]models.Comment, error)
 }
 
 type Repository struct {
@@ -27,7 +27,14 @@ type Repository struct {
 	Comment
 }
 
-func NewRepository(db *sqlx.DB) *Repository {
+func NewRepository(db *sqlx.DB, isStorageMemory bool) *Repository {
+	if isStorageMemory {
+		return &Repository{
+			Authorization: NewAuthPostgres(db),
+			Post:          NewPostMemory(),
+			Comment:       NewCommentPostgres(db),
+		}
+	}
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
 		Post:          NewPostPostgres(db),
