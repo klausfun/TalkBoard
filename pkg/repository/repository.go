@@ -27,14 +27,15 @@ type Repository struct {
 	Comment
 }
 
-func NewRepository(db *sqlx.DB, isStorageMemory bool) *Repository {
+func NewRepository(db *sqlx.DB, memory *Memory, isStorageMemory bool) *Repository {
 	if isStorageMemory {
 		return &Repository{
-			Authorization: NewAuthPostgres(db),
-			Post:          NewPostMemory(),
-			Comment:       NewCommentPostgres(db),
+			Authorization: NewUserMemory(memory),
+			Post:          NewPostMemory(memory),
+			Comment:       NewCommentMemory(memory),
 		}
 	}
+
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
 		Post:          NewPostPostgres(db),

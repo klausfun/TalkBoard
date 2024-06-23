@@ -1,9 +1,11 @@
 package main
 
 import (
+	"TalkBoard/models"
 	"TalkBoard/pkg/handler"
 	"TalkBoard/pkg/repository"
 	"TalkBoard/pkg/service"
+	"flag"
 	"fmt"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/joho/godotenv"
@@ -17,9 +19,8 @@ import (
 func main() {
 	logrus.SetFormatter(new(logrus.JSONFormatter))
 
-	//storageType := flag.String("storage", "memory", "Type of storage: memory or postgres")
-	//flag.Parse()
-	storageType := "memory"
+	storageType := flag.String("storage", "memory", "Type of storage: memory or postgres")
+	flag.Parse()
 
 	if err := initConfig(); err != nil {
 		logrus.Fatalf("error initializing configs: %s", err.Error())
@@ -41,18 +42,23 @@ func main() {
 		logrus.Fatalf("failed to initialize db: %s", err.Error())
 	}
 
+	memory := &repository.Memory{
+		Users:    make(map[int]models.User),
+		Comments: make(map[int][]models.Comment),
+		Posts:    make(map[int][]models.Post),
+	}
+
 	var repos *repository.Repository
-	//*storageType
-	switch storageType {
+	switch *storageType {
 	case "postgres":
 		fmt.Println("Starting application with PostgreSQL storage")
-		repos = repository.NewRepository(db, false)
+		repos = repository.NewRepository(db, memory, false)
 	case "memory":
 		fmt.Println("Starting application with in-memory storage")
-		repos = repository.NewRepository(db, true)
+		repos = repository.NewRepository(db, memory, true)
 	default:
 		fmt.Println("Unknown storage type, starting with default PostgreSQL storage")
-		repos = repository.NewRepository(db, false)
+		repos = repository.NewRepository(db, memory, false)
 	}
 
 	services := service.NewService(repos)

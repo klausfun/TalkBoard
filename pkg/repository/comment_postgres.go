@@ -16,13 +16,13 @@ func NewCommentPostgres(db *sqlx.DB) *CommentPostgres {
 }
 
 func (r *CommentPostgres) Create(comment models.Comment) (int, error) {
-	var access_to_comments bool
+	var accessToComments bool
 	queryCheckAccessToComments := fmt.Sprintf("SELECT access_to_comments FROM %s WHERE id = $1", postsTable)
-	err := r.db.Get(&access_to_comments, queryCheckAccessToComments, comment.PostId)
+	err := r.db.Get(&accessToComments, queryCheckAccessToComments, comment.PostId)
 	if err != nil {
 		return 0, errors.New("there is no post with this id!")
 	}
-	if !access_to_comments {
+	if !accessToComments {
 		return 0, errors.New("no comments are available under this post!")
 	}
 
@@ -59,9 +59,12 @@ func (r *CommentPostgres) Create(comment models.Comment) (int, error) {
 	return id, nil
 }
 
-func (r *CommentPostgres) GetByPostId(postId int) ([]models.Comment, error) {
+func (r *CommentPostgres) GetByPostId(postId, limit, offset int) ([]models.Comment, error) {
 	var comments []models.Comment
-	query := fmt.Sprintf("SELECT id, post_id, user_id, content FROM %s WHERE post_id = $1 AND parent_comment_id IS NULL", commentsTable)
+	//query := fmt.Sprintf("SELECT id, post_id, user_id, content FROM %s WHERE post_id = $1 AND parent_comment_id IS NULL"+
+	//	" ORDER BY id LIMIT %d OFFSET %d", commentsTable, limit, offset)
+	query := fmt.Sprintf("SELECT id, post_id, user_id, content "+
+		" FROM %s WHERE post_id = $1 AND parent_comment_id IS NULL", commentsTable)
 	err := r.db.Select(&comments, query, postId)
 	if err != nil {
 		return nil, err
@@ -80,7 +83,7 @@ func (r *CommentPostgres) GetByPostId(postId int) ([]models.Comment, error) {
 
 func (r *CommentPostgres) getRepliesForComment(parentCommentID int) ([]models.Comment, error) {
 	var replies []models.Comment
-	query := fmt.Sprintf("SELECT * FROM %s WHERE parent_comment_id = $1", commentsTable)
+	query := fmt.Sprintf("SELECT id, post_id, user_id, content FROM %s WHERE parent_comment_id = $1", commentsTable)
 	err := r.db.Select(&replies, query, parentCommentID)
 	if err != nil {
 		return nil, err
