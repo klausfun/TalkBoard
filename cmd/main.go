@@ -5,7 +5,6 @@ import (
 	"TalkBoard/pkg/handler"
 	"TalkBoard/pkg/repository"
 	"TalkBoard/pkg/service"
-	"flag"
 	"fmt"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/joho/godotenv"
@@ -18,9 +17,6 @@ import (
 
 func main() {
 	logrus.SetFormatter(new(logrus.JSONFormatter))
-
-	storageType := flag.String("storage", "memory", "Type of storage: memory or postgres")
-	flag.Parse()
 
 	if err := initConfig(); err != nil {
 		logrus.Fatalf("error initializing configs: %s", err.Error())
@@ -49,7 +45,8 @@ func main() {
 	}
 
 	var repos *repository.Repository
-	switch *storageType {
+	storageType := viper.GetString("STORAGE_TYPE")
+	switch storageType {
 	case "postgres":
 		fmt.Println("Starting application with PostgreSQL storage")
 		repos = repository.NewRepository(db, memory, false)
