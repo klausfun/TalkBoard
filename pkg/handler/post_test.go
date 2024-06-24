@@ -214,3 +214,180 @@ func TestHandler_getAllPosts(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_getPostById(t *testing.T) {
+	type mockBehaviorPost func(s *mock_service.MockPost, postId int)
+	type mockBehaviorComment func(s *mock_service.MockComment, postId, limit, offset int)
+
+	type inputBody struct {
+		postId, limit, offset int
+	}
+
+	testTable := []struct {
+		name                 string
+		inputBody            inputBody
+		postId               int
+		args                 map[string]interface{}
+		mockBehaviorPost     mockBehaviorPost
+		mockBehaviorComment  mockBehaviorComment
+		expectedErrorMessage string
+		expectedResponseBody PostWithComments
+	}{
+		{
+			name: "OK",
+			inputBody: inputBody{
+				postId: 2,
+				limit:  10,
+				offset: 0,
+			},
+			postId: 2,
+			args: map[string]interface{}{
+				"postId": 2,
+				"limit":  10,
+				"offset": 0,
+			},
+			mockBehaviorPost: func(s *mock_service.MockPost, postId int) {
+				s.EXPECT().GetByPostId(postId).Return(models.Post{
+					UserId:           1,
+					AccessToComments: true,
+					Title:            "title",
+					Content:          "content",
+					Id:               2,
+				}, nil)
+			},
+			mockBehaviorComment: func(s *mock_service.MockComment, postId, limit, offset int) {
+				s.EXPECT().GetByPostId(postId, limit, offset).Return([]models.Comment{
+					{
+						UserId:          1,
+						ParentCommentId: 0,
+						PostId:          2,
+						Content:         "content",
+						Id:              1,
+					},
+				}, nil)
+			},
+			expectedErrorMessage: "",
+			expectedResponseBody: PostWithComments{
+				Post: models.Post{
+					UserId:           1,
+					AccessToComments: true,
+					Title:            "title",
+					Content:          "content",
+					Id:               2,
+				},
+				Comments: []models.Comment{
+					{
+						UserId:          1,
+						ParentCommentId: 0,
+						PostId:          2,
+						Content:         "content",
+						Id:              1,
+					},
+				},
+			},
+		},
+		{
+			name: "Empty Fields",
+			inputBody: inputBody{
+				limit:  10,
+				offset: 0,
+			},
+			args: map[string]interface{}{
+				"limit":  10,
+				"offset": 0,
+			},
+			postId:               2,
+			mockBehaviorPost:     func(s *mock_service.MockPost, postId int) {},
+			mockBehaviorComment:  func(s *mock_service.MockComment, postId, limit, offset int) {},
+			expectedErrorMessage: "invalid input body",
+			expectedResponseBody: PostWithComments{},
+		},
+		{
+			name: "Service Failure",
+			inputBody: inputBody{
+				postId: 2,
+				limit:  10,
+				offset: 0,
+			},
+			postId: 2,
+			args: map[string]interface{}{
+				"postId": 2,
+				"limit":  10,
+				"offset": 0,
+			},
+			mockBehaviorPost: func(s *mock_service.MockPost, postId int) {
+				s.EXPECT().GetByPostId(postId).Return(models.Post{}, errors.New("service failure"))
+			},
+			mockBehaviorComment:  func(s *mock_service.MockComment, postId, limit, offset int) {},
+			expectedErrorMessage: "service failure",
+			expectedResponseBody: PostWithComments{},
+		},
+		{
+			name: "Service Failure",
+			inputBody: inputBody{
+				postId: 2,
+				limit:  10,
+				offset: 0,
+			},
+			postId: 2,
+			args: map[string]interface{}{
+				"postId": 2,
+				"limit":  10,
+				"offset": 0,
+			},
+			mockBehaviorPost: func(s *mock_service.MockPost, postId int) {
+				s.EXPECT().GetByPostId(postId).Return(models.Post{
+					UserId:           1,
+					AccessToComments: true,
+					Title:            "title",
+					Content:          "content",
+					Id:               2,
+				}, nil)
+			},
+			mockBehaviorComment: func(s *mock_service.MockComment, postId, limit, offset int) {
+				s.EXPECT().GetByPostId(postId, limit, offset).Return(nil, errors.New("service failure"))
+			},
+			expectedErrorMessage: "service failure",
+			expectedResponseBody: PostWithComments{},
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockPostService := mock_service.NewMockPost(ctrl)
+			testCase.mockBehaviorPost(mockPostService, testCase.postId)
+
+			mockCommentService := mock_service.NewMockComment(ctrl)
+			testCase.mockBehaviorComment(mockCommentService, testCase.inputBody.postId,
+				testCase.inputBody.limit, testCase.inputBody.offset)
+
+			services := &service.Service{Post: mockPostService, Comment: mockCommentService}
+			handlers := NewHandler(services)
+
+			p := graphql.ResolveParams{
+				Context: context.Background(),
+				Args:    testCase.args,
+			}
+
+			result, err := handlers.getPostById(p)
+			if err != nil {
+				formattedErr, ok := err.(gqlerrors.FormattedError)
+				if !ok {
+					t.Fatalf("expected gqlerrors.FormattedError, got %T", err)
+				}
+				assert.Equal(t, testCase.expectedErrorMessage, formattedErr.Message)
+				return
+			}
+
+			response, ok := result.(PostWithComments)
+			if !ok {
+				t.Fatalf("returned unexpected type: %T", result)
+			}
+
+			assert.Equal(t, testCase.expectedResponseBody, response)
+		})
+	}
+}

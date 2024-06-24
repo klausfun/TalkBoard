@@ -5,6 +5,11 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
+type PostWithComments struct {
+	Post     models.Post      `json:"post"`
+	Comments []models.Comment `json:"comments"`
+}
+
 func (h *Handler) createPost(p graphql.ResolveParams) (interface{}, error) {
 	input, ok := p.Args["input"].(map[string]interface{})
 	if !ok {
@@ -46,9 +51,12 @@ func (h *Handler) getAllPosts(p graphql.ResolveParams) (interface{}, error) {
 }
 
 func (h *Handler) getPostById(p graphql.ResolveParams) (interface{}, error) {
-	postId := p.Args["postId"].(int)
+	postId, postIdOk := p.Args["postId"].(int)
 	limit, limitOk := p.Args["limit"].(int)
 	offset, offsetOk := p.Args["offset"].(int)
+	if !postIdOk {
+		return nil, newErrorResponse("invalid input body")
+	}
 	if !limitOk {
 		limit = 1
 	}
@@ -58,18 +66,15 @@ func (h *Handler) getPostById(p graphql.ResolveParams) (interface{}, error) {
 
 	post, err := h.services.Post.GetByPostId(postId)
 	if err != nil {
-		return nil, err
+		return nil, newErrorResponse("service failure")
 	}
 
 	comments, err := h.services.Comment.GetByPostId(postId, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, newErrorResponse("service failure")
 	}
 
-	postWithComments := struct {
-		Post     models.Post      `json:"post"`
-		Comments []models.Comment `json:"comments"`
-	}{
+	postWithComments := PostWithComments{
 		Post:     post,
 		Comments: comments,
 	}
