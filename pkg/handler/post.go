@@ -50,7 +50,7 @@ func (h *Handler) getPostById(p graphql.ResolveParams) (interface{}, error) {
 	limit, limitOk := p.Args["limit"].(int)
 	offset, offsetOk := p.Args["offset"].(int)
 	if !limitOk {
-		limit = 10
+		limit = 1
 	}
 	if !offsetOk {
 		offset = 0
