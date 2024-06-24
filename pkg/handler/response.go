@@ -1,15 +1,11 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/graphql-go/graphql/gqlerrors"
 	"github.com/sirupsen/logrus"
 )
 
-type errorResponse struct {
-	Message string `json:"message"`
-}
-
-func newErrorResponse(c *gin.Context, statusCode int, message string) {
+func newErrorResponse(message string) error {
 	logrus.Error(message)
-	c.AbortWithStatusJSON(statusCode, errorResponse{message})
+	return gqlerrors.NewFormattedError(message)
 }

@@ -6,16 +6,27 @@ import (
 )
 
 func (h *Handler) signUp(p graphql.ResolveParams) (interface{}, error) {
-	input := p.Args["input"].(map[string]interface{})
+	input, ok := p.Args["input"].(map[string]interface{})
+	if !ok {
+		return nil, newErrorResponse("invalid input body")
+	}
+	name, nameOk := input["name"].(string)
+	email, emailOk := input["email"].(string)
+	password, passwordOk := input["password"].(string)
+
+	if !nameOk || !emailOk || !passwordOk || name == "" || email == "" || password == "" {
+		return nil, newErrorResponse("invalid input body")
+	}
+
 	user := models.User{
-		Name:     input["name"].(string),
-		Email:    input["email"].(string),
-		Password: input["password"].(string),
+		Name:     name,
+		Email:    email,
+		Password: password,
 	}
 
 	id, err := h.services.Authorization.CreateUser(user)
 	if err != nil {
-		return nil, err
+		return nil, newErrorResponse("service failure")
 	}
 
 	user.Id = id
