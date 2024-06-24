@@ -136,3 +136,81 @@ func TestHandler_createPost(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_getAllPosts(t *testing.T) {
+	type mockBehavior func(s *mock_service.MockPost)
+
+	testTable := []struct {
+		name                 string
+		mockBehavior         mockBehavior
+		expectedErrorMessage string
+		expectedResponseBody []models.Post
+	}{
+		{
+			name: "OK",
+			mockBehavior: func(s *mock_service.MockPost) {
+				s.EXPECT().GetAll().Return([]models.Post{
+					{
+						UserId:           1,
+						AccessToComments: true,
+						Title:            "title",
+						Content:          "content",
+						Id:               2,
+					},
+				}, nil)
+			},
+			expectedErrorMessage: "",
+			expectedResponseBody: []models.Post{
+				{
+					UserId:           1,
+					AccessToComments: true,
+					Title:            "title",
+					Content:          "content",
+					Id:               2,
+				},
+			},
+		},
+		{
+			name: "Service Failure",
+			mockBehavior: func(s *mock_service.MockPost) {
+				s.EXPECT().GetAll().Return([]models.Post{}, errors.New("service failure"))
+			},
+			expectedErrorMessage: "service failure",
+			expectedResponseBody: []models.Post{},
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockPostService := mock_service.NewMockPost(ctrl)
+			testCase.mockBehavior(mockPostService)
+
+			services := &service.Service{Post: mockPostService}
+			handler := NewHandler(services)
+
+			p := graphql.ResolveParams{
+				Context: context.Background(),
+			}
+
+			result, err := handler.getAllPosts(p)
+			if err != nil {
+				formattedErr, ok := err.(gqlerrors.FormattedError)
+				if !ok {
+					t.Fatalf("expected gqlerrors.FormattedError, got %T", err)
+				}
+				assert.Equal(t, testCase.expectedErrorMessage, formattedErr.Message)
+				return
+			}
+
+			response, ok := result.([]models.Post)
+			if !ok {
+				t.Fatalf("signUp returned unexpected type: %T", result)
+			}
+
+			assert.Equal(t, testCase.expectedResponseBody, response)
+		})
+	}
+}

@@ -39,7 +39,7 @@ func (h *Handler) createPost(p graphql.ResolveParams) (interface{}, error) {
 func (h *Handler) getAllPosts(p graphql.ResolveParams) (interface{}, error) {
 	posts, err := h.services.Post.GetAll()
 	if err != nil {
-		return nil, err
+		return nil, newErrorResponse("service failure")
 	}
 
 	return posts, nil
