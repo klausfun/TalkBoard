@@ -4,16 +4,14 @@ services:
   talkboard:
     build:
       context: ./
-      args:
-        STORAGE_TYPE: ${STORAGE_TYPE:-postgres}
     command: ./wait-for-postgres.sh db ./talkBoard
     ports:
       - 8000:8000
     depends_on:
       - db
     environment:
-      - DB_PASSWORD=qwerty
-      - STORAGE_TYPE=${STORAGE_TYPE:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - STORAGE_TYPE=${STORAGE_TYPE}
 
   db:
     restart: always

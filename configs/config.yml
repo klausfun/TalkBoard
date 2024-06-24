@@ -1,5 +1,4 @@
 port: "8000"
-STORAGE_TYPE: "postgres"
 
 db:
   host: "db"

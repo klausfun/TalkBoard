@@ -45,7 +45,11 @@ func main() {
 	}
 
 	var repos *repository.Repository
-	storageType := viper.GetString("STORAGE_TYPE")
+	storageType := os.Getenv("STORAGE_TYPE")
+	if storageType == "" {
+		storageType = "postgres"
+	}
+
 	switch storageType {
 	case "postgres":
 		fmt.Println("Starting application with PostgreSQL storage")
