@@ -2,15 +2,22 @@ package handler
 
 import (
 	"TalkBoard/models"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/graphql"
 )
 
 func (h *Handler) createComment(p graphql.ResolveParams) (interface{}, error) {
-	input := p.Args["input"].(map[string]interface{})
-	userId := input["userId"].(int)
-	postId := input["postId"].(int)
-	content := input["content"].(string)
+	input, ok := p.Args["input"].(map[string]interface{})
+	if !ok {
+		return nil, newErrorResponse("invalid input body")
+	}
+	userId, userIdOk := input["userId"].(int)
+	postId, postIdOk := input["postId"].(int)
+	content, contentOk := input["content"].(string)
+	if !userIdOk || !postIdOk || !contentOk || content == "" {
+		return nil, newErrorResponse("invalid input body")
+	}
 
 	var parentCommentId int
 	if id, ok := input["parentCommentId"]; ok {
@@ -28,10 +35,11 @@ func (h *Handler) createComment(p graphql.ResolveParams) (interface{}, error) {
 
 	commentId, err := h.services.Comment.Create(comment)
 	if err != nil {
-		return nil, err
+		return nil, newErrorResponse("service failure")
 	}
 
 	comment.Id = commentId
+	fmt.Println(comment, comment.Id)
 	return comment, nil
 }
 
