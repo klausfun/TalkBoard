@@ -171,3 +171,110 @@ func TestCommentPostgres_Create(t *testing.T) {
 		})
 	}
 }
+
+func TestCommentPostgres_GetByPostId(t *testing.T) {
+	db, mock, err := sqlmock.Newx()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	r := NewCommentPostgres(db)
+
+	type inputBody struct {
+		postId, limit, offset int
+	}
+	type mockBehavior func(args inputBody)
+
+	testTable := []struct {
+		name         string
+		mockBehavior mockBehavior
+		args         inputBody
+		comments     []models.Comment
+		wantErr      bool
+	}{
+		{
+			name: "OK",
+			comments: []models.Comment{
+				{
+					Id:      1,
+					UserId:  1,
+					PostId:  3,
+					Content: "content1",
+				},
+			},
+			args: inputBody{
+				postId: 3,
+				limit:  2,
+				offset: 0,
+			},
+			mockBehavior: func(args inputBody) {
+				comments := sqlmock.NewRows([]string{"id", "post_id", "user_id", "content"}).
+					AddRow(1, 3, 1, "content1")
+				mock.ExpectQuery("SELECT id, post_id, user_id, content "+
+					" FROM comments WHERE post_id = (.+) AND parent_comment_id IS NULL"+
+					" ORDER BY id LIMIT (.+) OFFSET (.+)").
+					WithArgs(args.postId, args.limit, args.offset).WillReturnRows(comments)
+
+				replies := sqlmock.NewRows([]string{"id", "post_id", "user_id", "parent_comment_id", "content"})
+				mock.ExpectQuery("SELECT id, post_id, user_id, parent_comment_id, content " +
+					"FROM comments WHERE parent_comment_id = (.+)").
+					WithArgs(1).WillReturnRows(replies)
+			},
+		},
+		{
+			name: "There is no such comment",
+			args: inputBody{
+				postId: 3,
+				limit:  2,
+				offset: 0,
+			},
+			mockBehavior: func(args inputBody) {
+				comments := sqlmock.NewRows([]string{"id", "post_id", "user_id", "content"}).
+					AddRow(1, 3, 1, "content1").RowError(0, errors.New("error"))
+				mock.ExpectQuery("SELECT id, post_id, user_id, content "+
+					" FROM comments WHERE post_id = (.+) AND parent_comment_id IS NULL"+
+					" ORDER BY id LIMIT (.+) OFFSET (.+)").
+					WithArgs(args.postId, args.limit, args.offset).WillReturnRows(comments)
+			},
+			wantErr: true,
+		},
+		{
+			name: "There is no such comment",
+			args: inputBody{
+				postId: 3,
+				limit:  2,
+				offset: 0,
+			},
+			mockBehavior: func(args inputBody) {
+				comments := sqlmock.NewRows([]string{"id", "post_id", "user_id", "content"}).
+					AddRow(1, 3, 1, "content1")
+				mock.ExpectQuery("SELECT id, post_id, user_id, content "+
+					" FROM comments WHERE post_id = (.+) AND parent_comment_id IS NULL"+
+					" ORDER BY id LIMIT (.+) OFFSET (.+)").
+					WithArgs(args.postId, args.limit, args.offset).WillReturnRows(comments)
+
+				replies := sqlmock.NewRows([]string{"id", "post_id", "user_id", "parent_comment_id", "content"}).
+					RowError(0, errors.New("error"))
+				mock.ExpectQuery("SELECT id, post_id, user_id, parent_comment_id, content " +
+					"FROM comments WHERE parent_comment_id = (.+)").
+					WithArgs(0).WillReturnRows(replies)
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			testCase.mockBehavior(testCase.args)
+
+			got, err := r.GetByPostId(testCase.args.postId, testCase.args.limit, testCase.args.offset)
+			if testCase.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, testCase.comments, got)
+			}
+		})
+	}
+}

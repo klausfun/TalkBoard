@@ -62,8 +62,8 @@ func (r *CommentPostgres) Create(comment models.Comment) (int, error) {
 func (r *CommentPostgres) GetByPostId(postId, limit, offset int) ([]models.Comment, error) {
 	var comments []models.Comment
 	query := fmt.Sprintf("SELECT id, post_id, user_id, content FROM %s WHERE post_id = $1 AND parent_comment_id IS NULL"+
-		" ORDER BY id LIMIT %d OFFSET %d", commentsTable, limit, offset)
-	err := r.db.Select(&comments, query, postId)
+		" ORDER BY id LIMIT $2 OFFSET $3", commentsTable)
+	err := r.db.Select(&comments, query, postId, limit, offset)
 	if err != nil {
 		return nil, err
 	}
