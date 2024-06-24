@@ -39,8 +39,14 @@ func (h *Handler) createSchema() graphql.Schema {
 				Type:        schema_graphql.PostWithCommentsType,
 				Description: "Get a post by ID with comments",
 				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
+					"postId": &graphql.ArgumentConfig{
 						Type: graphql.NewNonNull(graphql.Int),
+					},
+					"limit": &graphql.ArgumentConfig{
+						Type: graphql.Int,
+					},
+					"offset": &graphql.ArgumentConfig{
+						Type: graphql.Int,
 					},
 				},
 				Resolve: h.getPostById,

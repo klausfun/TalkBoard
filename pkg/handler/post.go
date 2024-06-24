@@ -46,14 +46,22 @@ func (h *Handler) getAllPosts(p graphql.ResolveParams) (interface{}, error) {
 }
 
 func (h *Handler) getPostById(p graphql.ResolveParams) (interface{}, error) {
-	postId := p.Args["id"].(int)
+	postId := p.Args["postId"].(int)
+	limit, limitOk := p.Args["limit"].(int)
+	offset, offsetOk := p.Args["offset"].(int)
+	if !limitOk {
+		limit = 10
+	}
+	if !offsetOk {
+		offset = 0
+	}
 
 	post, err := h.services.Post.GetByPostId(postId)
 	if err != nil {
 		return nil, err
 	}
 
-	comments, err := h.services.Comment.GetByPostId(postId, 0, 0)
+	comments, err := h.services.Comment.GetByPostId(postId, limit, offset)
 	if err != nil {
 		return nil, err
 	}

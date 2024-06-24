@@ -2,8 +2,6 @@ package handler
 
 import (
 	"TalkBoard/models"
-	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/graphql"
 )
 
@@ -12,6 +10,7 @@ func (h *Handler) createComment(p graphql.ResolveParams) (interface{}, error) {
 	if !ok {
 		return nil, newErrorResponse("invalid input body")
 	}
+
 	userId, userIdOk := input["userId"].(int)
 	postId, postIdOk := input["postId"].(int)
 	content, contentOk := input["content"].(string)
@@ -39,10 +38,7 @@ func (h *Handler) createComment(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	comment.Id = commentId
-	fmt.Println(comment, comment.Id)
 	return comment, nil
 }
 
-func (h *Handler) getSubscriptionsByPostId(c *gin.Context) {}
-
-func (h *Handler) deleteSubscription(c *gin.Context) {}
+func (h *Handler) deleteComment(p graphql.ResolveParams) {}

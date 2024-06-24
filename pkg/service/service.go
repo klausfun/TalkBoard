@@ -5,6 +5,8 @@ import (
 	"TalkBoard/pkg/repository"
 )
 
+//go:generate mockgen -source=service.go -destination=mocks/mock.go
+
 type Authorization interface {
 	CreateUser(user models.User) (int, error)
 	GenerateToken(email, password string) (string, error)
@@ -20,7 +22,7 @@ type Post interface {
 type Comment interface {
 	//Create(userId int, comment models.Comment) (int, error)
 	Create(comment models.Comment) (int, error)
-	GetByPostId(postId int) ([]models.Comment, error)
+	GetByPostId(postId, limit, offset int) ([]models.Comment, error)
 }
 
 type Service struct {

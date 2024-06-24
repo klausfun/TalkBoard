@@ -17,11 +17,6 @@ func (s *CommentService) Create(comment models.Comment) (int, error) {
 	return s.repo.Create(comment)
 }
 
-func (s *CommentService) GetByPostId(postId int) ([]models.Comment, error) {
-	comments, err := s.repo.GetByPostId(postId)
-	if err != nil {
-		return nil, err
-	}
-
-	return comments, nil
+func (s *CommentService) GetByPostId(postId, limit, offset int) ([]models.Comment, error) {
+	return s.repo.GetByPostId(postId, limit, offset)
 }

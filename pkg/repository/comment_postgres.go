@@ -83,7 +83,8 @@ func (r *CommentPostgres) GetByPostId(postId, limit, offset int) ([]models.Comme
 
 func (r *CommentPostgres) getRepliesForComment(parentCommentID int) ([]models.Comment, error) {
 	var replies []models.Comment
-	query := fmt.Sprintf("SELECT id, post_id, user_id, content FROM %s WHERE parent_comment_id = $1", commentsTable)
+	query := fmt.Sprintf("SELECT id, post_id, user_id, parent_comment_id, content "+
+		" FROM %s WHERE parent_comment_id = $1", commentsTable)
 	err := r.db.Select(&replies, query, parentCommentID)
 	if err != nil {
 		return nil, err

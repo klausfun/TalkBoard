@@ -22,7 +22,5 @@ func (s *PostService) GetAll() ([]models.Post, error) {
 }
 
 func (s *PostService) GetByPostId(postId int) (models.Post, error) {
-	post, err := s.repo.GetByPostId(postId)
-
-	return post, err
+	return s.repo.GetByPostId(postId)
 }
