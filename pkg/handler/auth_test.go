@@ -5,7 +5,6 @@ import (
 	"TalkBoard/pkg/service"
 	mock_service "TalkBoard/pkg/service/mocks"
 	"context"
-	"encoding/json"
 	"errors"
 	"github.com/golang/mock/gomock"
 	"github.com/graphql-go/graphql"
@@ -23,7 +22,7 @@ func TestHandler_signUp(t *testing.T) {
 		inputArgs            map[string]interface{}
 		mockBehavior         mockBehavior
 		expectedErrorMessage string
-		expectedResponseBody string
+		expectedResponseBody models.User
 	}{
 		{
 			name: "OK",
@@ -41,12 +40,12 @@ func TestHandler_signUp(t *testing.T) {
 				s.EXPECT().CreateUser(user).Return(1, nil)
 			},
 			expectedErrorMessage: "",
-			expectedResponseBody: `{
-				"id": 1,
-				"email": "test@mail.ru",
-				"name": "test",
-				"password": "qwerty"
-			}`,
+			expectedResponseBody: models.User{
+				Id:       1,
+				Email:    "test@mail.ru",
+				Name:     "test",
+				Password: "qwerty",
+			},
 		},
 		{
 			name: "Empty Fields",
@@ -60,7 +59,7 @@ func TestHandler_signUp(t *testing.T) {
 			},
 			mockBehavior:         func(s *mock_service.MockAuthorization, user models.User) {},
 			expectedErrorMessage: "invalid input body",
-			expectedResponseBody: "",
+			expectedResponseBody: models.User{},
 		},
 		{
 			name:      "Invalid Input Type",
@@ -70,7 +69,7 @@ func TestHandler_signUp(t *testing.T) {
 			},
 			mockBehavior:         func(s *mock_service.MockAuthorization, user models.User) {},
 			expectedErrorMessage: "invalid input body",
-			expectedResponseBody: "",
+			expectedResponseBody: models.User{},
 		},
 		{
 			name: "Service Failure",
@@ -88,7 +87,7 @@ func TestHandler_signUp(t *testing.T) {
 				s.EXPECT().CreateUser(user).Return(1, errors.New("service failure"))
 			},
 			expectedErrorMessage: "service failure",
-			expectedResponseBody: ``,
+			expectedResponseBody: models.User{},
 		},
 	}
 
@@ -126,12 +125,116 @@ func TestHandler_signUp(t *testing.T) {
 				t.Fatalf("signUp returned unexpected type: %T", result)
 			}
 
-			responseJson, err := json.Marshal(response)
-			if err != nil {
-				t.Fatalf("failed to marshal response: %v", err)
+			assert.Equal(t, testCase.expectedResponseBody, response)
+
+		})
+	}
+}
+
+func TestHandler_signIn(t *testing.T) {
+	type mockBehavior func(s *mock_service.MockAuthorization, user models.User)
+
+	testTable := []struct {
+		name                 string
+		inputUser            models.User
+		inputArgs            map[string]interface{}
+		mockBehavior         mockBehavior
+		expectedErrorMessage string
+		expectedResponseBody map[string]interface{}
+	}{
+		{
+			name: "OK",
+			inputArgs: map[string]interface{}{
+				"email":    "test@mail.ru",
+				"password": "qwerty",
+			},
+			inputUser: models.User{
+				Email:    "test@mail.ru",
+				Password: "qwerty",
+			},
+			mockBehavior: func(s *mock_service.MockAuthorization, user models.User) {
+				s.EXPECT().GenerateToken(user.Email, user.Password).Return("1", nil)
+			},
+			expectedErrorMessage: "",
+			expectedResponseBody: map[string]interface{}{
+				"token": "1",
+			},
+		},
+		{
+			name: "Empty Fields",
+			inputUser: models.User{
+				Email: "test@mail.ru",
+			},
+			inputArgs: map[string]interface{}{
+				"email": "test@mail.ru",
+			},
+			mockBehavior:         func(s *mock_service.MockAuthorization, user models.User) {},
+			expectedErrorMessage: "invalid input body",
+			expectedResponseBody: map[string]interface{}{},
+		},
+		{
+			name:      "Invalid Input Type",
+			inputUser: models.User{},
+			inputArgs: map[string]interface{}{
+				"input": "invalid",
+			},
+			mockBehavior:         func(s *mock_service.MockAuthorization, user models.User) {},
+			expectedErrorMessage: "invalid input body",
+			expectedResponseBody: map[string]interface{}{},
+		},
+		{
+			name: "Service Failure",
+			inputArgs: map[string]interface{}{
+				"email":    "test@mail.ru",
+				"password": "qwerty",
+			},
+			inputUser: models.User{
+				Email:    "test@mail.ru",
+				Password: "qwerty",
+			},
+			mockBehavior: func(s *mock_service.MockAuthorization, user models.User) {
+				s.EXPECT().GenerateToken(user.Email, user.Password).Return("", errors.New("service failure"))
+			},
+			expectedErrorMessage: "service failure",
+			expectedResponseBody: map[string]interface{}{},
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockAuthService := mock_service.NewMockAuthorization(ctrl)
+			testCase.mockBehavior(mockAuthService, testCase.inputUser)
+
+			services := &service.Service{Authorization: mockAuthService}
+			handler := NewHandler(services)
+
+			args := map[string]interface{}{
+				"input": testCase.inputArgs,
+			}
+			p := graphql.ResolveParams{
+				Context: context.Background(),
+				Args:    args,
 			}
 
-			assert.JSONEq(t, testCase.expectedResponseBody, string(responseJson))
+			result, err := handler.signIn(p)
+			if err != nil {
+				formattedErr, ok := err.(gqlerrors.FormattedError)
+				if !ok {
+					t.Fatalf("expected gqlerrors.FormattedError, got %T", err)
+				}
+				assert.Equal(t, testCase.expectedErrorMessage, formattedErr.Message)
+				return
+			}
+
+			response, ok := result.(map[string]interface{})
+			if !ok {
+				t.Fatalf("signIn returned unexpected type: %T", result)
+			}
+
+			assert.Equal(t, testCase.expectedResponseBody, response)
 
 		})
 	}
