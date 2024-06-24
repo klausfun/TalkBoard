@@ -16,7 +16,7 @@ a system for creating and reading posts and comments.
 Планируется дальнейшее развитие проекта с акцентом на улучшение производительности и надежности системы.
 
 ## Локальный запуск
-Для развертывания сервиса необходимы [Docker](https://docs.docker.com/engine/install/)
+Для развертывания сервиса необходимы [Docker](https://docs.docker.com/engine/install/) и [Docker Compose](https://docs.docker.com/compose/).
 
 **Важно:** Перед запуском убедитесь, что вы установили пароли. Для этого создайте файл .env в корневой директории и добавьте туда:\
 `DB_PASSWORD=...`
