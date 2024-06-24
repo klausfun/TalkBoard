@@ -6,13 +6,22 @@ import (
 )
 
 func (h *Handler) createPost(p graphql.ResolveParams) (interface{}, error) {
-	input := p.Args["input"].(map[string]interface{})
-	userId := input["userId"].(int)
-	title := input["title"].(string)
-	content := input["content"].(string)
-	accessToComments := input["accessToComments"].(bool)
+	input, ok := p.Args["input"].(map[string]interface{})
+	if !ok {
+		return nil, newErrorResponse("invalid input body")
+	}
+
+	userId, userIdOk := input["userId"].(int)
+	title, titleOk := input["title"].(string)
+	content, contentOk := input["content"].(string)
+	accessToComments, accessToCommentsOk := input["accessToComments"].(bool)
+	if !userIdOk || !titleOk || !accessToCommentsOk || !contentOk || content == "" || title == "" {
+		return nil, newErrorResponse("invalid input body")
+	}
 
 	post := models.Post{
+		Id:               0,
+		UserId:           userId,
 		Title:            title,
 		Content:          content,
 		AccessToComments: accessToComments,
@@ -20,7 +29,7 @@ func (h *Handler) createPost(p graphql.ResolveParams) (interface{}, error) {
 
 	postId, err := h.services.Post.Create(userId, post)
 	if err != nil {
-		return nil, err
+		return nil, newErrorResponse("service failure")
 	}
 
 	post.Id = postId
@@ -44,7 +53,7 @@ func (h *Handler) getPostById(p graphql.ResolveParams) (interface{}, error) {
 		return nil, err
 	}
 
-	comments, err := h.services.Comment.GetByPostId(postId)
+	comments, err := h.services.Comment.GetByPostId(postId, 0, 0)
 	if err != nil {
 		return nil, err
 	}
