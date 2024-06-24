@@ -141,3 +141,58 @@ func TestPostPostgres_GetAll(t *testing.T) {
 		})
 	}
 }
+
+func TestPostPostgres_GetByPostId(t *testing.T) {
+	db, mock, err := sqlmock.Newx()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	r := NewPostPostgres(db)
+
+	testTable := []struct {
+		name    string
+		mock    func()
+		postId  int
+		want    models.Post
+		wantErr bool
+	}{
+		{
+			name: "OK",
+			mock: func() {
+				rows := sqlmock.NewRows([]string{"id", "user_id", "title", "content", "access_to_comments"}).
+					AddRow(1, 1, "title", "content", true)
+
+				mock.ExpectQuery("SELECT \\* FROM posts WHERE (.+)").WithArgs(1).WillReturnRows(rows)
+			},
+			postId: 1,
+			want:   models.Post{1, 1, "title", "content", true},
+		},
+		{
+			name: "Not Found",
+			mock: func() {
+				rows := sqlmock.NewRows([]string{"id", "user_id", "title", "content", "access_to_comments"})
+
+				mock.ExpectQuery("SELECT \\* FROM posts WHERE (.+)").
+					WithArgs(1).WillReturnRows(rows)
+			},
+			postId:  1,
+			wantErr: true,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			testCase.mock()
+
+			got, err := r.GetByPostId(testCase.postId)
+			if testCase.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, testCase.want, got)
+			}
+		})
+	}
+}
