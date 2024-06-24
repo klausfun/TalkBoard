@@ -85,3 +85,59 @@ func TestPostPostgres_Create(t *testing.T) {
 		})
 	}
 }
+
+func TestPostPostgres_GetAll(t *testing.T) {
+	db, mock, err := sqlmock.Newx()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	r := NewPostPostgres(db)
+
+	testTable := []struct {
+		name    string
+		mock    func()
+		want    []models.Post
+		wantErr bool
+	}{
+		{
+			name: "OK",
+			mock: func() {
+				rows := sqlmock.NewRows([]string{"id", "user_id", "title", "content", "access_to_comments"}).
+					AddRow(1, 1, "title1", "content1", true).
+					AddRow(2, 1, "title2", "content2", false).
+					AddRow(3, 1, "title3", "content3", true)
+
+				mock.ExpectQuery("SELECT \\* FROM posts").WillReturnRows(rows)
+			},
+			want: []models.Post{
+				{1, 1, "title1", "content1", true},
+				{2, 1, "title2", "content2", false},
+				{3, 1, "title3", "content3", true},
+			},
+		},
+		{
+			name: "No Records",
+			mock: func() {
+				rows := sqlmock.NewRows([]string{"id", "user_id", "title", "content", "access_to_comments"})
+
+				mock.ExpectQuery("SELECT \\* FROM posts").WillReturnRows(rows)
+			},
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			testCase.mock()
+
+			got, err := r.GetAll()
+			if testCase.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, testCase.want, got)
+			}
+		})
+	}
+}
