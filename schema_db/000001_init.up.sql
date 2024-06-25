@@ -23,3 +23,7 @@ CREATE TABLE comments
     user_id           int references users (id) on delete cascade not null,
     content           varchar(2000)                               not null
 );
+
+CREATE INDEX idx_comments_parent_comment_id ON comments(parent_comment_id);
+
+CREATE INDEX idx_comments_post_id ON comments(post_id);
