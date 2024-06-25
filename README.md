@@ -25,5 +25,5 @@ a system for creating and reading posts and comments.
 2. `cd TalkBoard`
 3. `docker pull postgres` - для скачивания образа postgres
 4. `$env:STORAGE_TYPE = ...` вместо ... нужно указать `"memory"` или `"postgres"`, в ином случае будет использоваться postgres (по умолчанию)
-5. `docker run --name=talkBoard-db -e POSTGRES_PASSWORD='qwerty' -p 5436:5432 -d --rm postgres` (вместо 'qwerty' необходимо указать Ваш пароль от БД)
+5. `docker-compose up --build`
 6. `migrate -path ./schema_db -database 'postgres://postgres:qwerty@localhost:5436/postgres?sslmode=disable' up` (вместо 'qwerty' необходимо указать Ваш пароль от БД)
