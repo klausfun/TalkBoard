@@ -73,12 +73,54 @@ func (m *CommentMemory) GetByPostId(postId, limit, offset int) ([]models.Comment
 		return replies
 	}
 
+	var rootComments []models.Comment
 	for _, comment := range m.memory.Comments[postId] {
 		if comment.ParentCommentId == 0 {
-			comment.Replies = findReplies(comment.Id)
-			result = append(result, comment)
+			rootComments = append(rootComments, comment)
 		}
+	}
+
+	if offset >= len(rootComments) {
+		return []models.Comment{}, nil
+	}
+
+	end := offset + limit
+	if end > len(rootComments) {
+		end = len(rootComments)
+	}
+
+	for _, comment := range rootComments[offset:end] {
+		comment.Replies = findReplies(comment.Id)
+		result = append(result, comment)
 	}
 
 	return result, nil
 }
+
+//func (m *CommentMemory) GetByPostId(postId, limit, offset int) ([]models.Comment, error) {
+//	m.memory.mu.RLock()
+//	defer m.memory.mu.RUnlock()
+//
+//	var result []models.Comment
+//
+//	var findReplies func(parentId int) []models.Comment
+//	findReplies = func(parentId int) []models.Comment {
+//		var replies []models.Comment
+//		for _, comment := range m.memory.Comments[postId] {
+//			if comment.ParentCommentId == parentId {
+//				comment.Replies = findReplies(comment.Id)
+//				replies = append(replies, comment)
+//			}
+//		}
+//		return replies
+//	}
+//
+//	for _, comment := range m.memory.Comments[postId] {
+//		if comment.ParentCommentId == 0 {
+//			comment.Replies = findReplies(comment.Id)
+//			result = append(result, comment)
+//		}
+//	}
+//
+//	return result, nil
+//}
