@@ -40,7 +40,7 @@ func main() {
 
 	memory := &repository.Memory{
 		Users:    make(map[int]models.User),
-		Comments: make(map[int][]models.Comment),
+		Comments: make(map[int]map[int]models.Comment),
 		Posts:    make(map[int][]models.Post),
 	}
 

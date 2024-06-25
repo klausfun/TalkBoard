@@ -39,28 +39,46 @@ func (m *CommentMemory) Create(comment models.Comment) (int, error) {
 		return 0, errors.New("no comments are available under this post!")
 	}
 
-	comments, ok := m.memory.Comments[comment.ParentCommentId]
-	if !ok {
-		m.memory.Comments[0] = append(m.memory.Comments[0], comments...)
+	if _, ok := m.memory.Comments[comment.PostId]; !ok {
+		m.memory.Comments[comment.PostId] = make(map[int]models.Comment)
+		comment.ParentCommentId = 0
+		m.memory.Comments[comment.PostId][comment.Id] = comment
+
 		return comment.Id, nil
 	}
 
-	flag = false
-	for _, com := range comments {
-		if com.PostId == comment.PostId &&
-			com.ParentCommentId == comment.ParentCommentId {
-			flag = true
-			break
-		}
+	if _, ok := m.memory.Comments[comment.PostId][comment.ParentCommentId]; !ok {
+		comment.ParentCommentId = 0
 	}
-	if !flag {
-		return 0, errors.New("postId and commentId do not match each other!")
-	}
+	m.memory.Comments[comment.PostId][comment.Id] = comment
 
-	m.memory.Comments[comment.ParentCommentId] = append(m.memory.Comments[comment.ParentCommentId], comments...)
 	return comment.Id, nil
 }
 
 func (m *CommentMemory) GetByPostId(postId, limit, offset int) ([]models.Comment, error) {
-	return []models.Comment{}, nil
+	m.memory.mu.RLock()
+	defer m.memory.mu.RUnlock()
+
+	var result []models.Comment
+
+	var findReplies func(parentId int) []models.Comment
+	findReplies = func(parentId int) []models.Comment {
+		var replies []models.Comment
+		for _, comment := range m.memory.Comments[postId] {
+			if comment.ParentCommentId == parentId {
+				comment.Replies = findReplies(comment.Id)
+				replies = append(replies, comment)
+			}
+		}
+		return replies
+	}
+
+	for _, comment := range m.memory.Comments[postId] {
+		if comment.ParentCommentId == 0 {
+			comment.Replies = findReplies(comment.Id)
+			result = append(result, comment)
+		}
+	}
+
+	return result, nil
 }
